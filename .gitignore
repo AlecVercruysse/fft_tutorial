@@ -1,0 +1,17 @@
+*.txt
+*.rpt
+db/
+incremental_db/
+.ipynb_checkpoints/
+output_files/
+
+; need to keep simulation/modelsim/rom folder & its associated readme,
+; but ignore all else. There's no way super clean way to do this.
+
+simulation/*
+simulation/modelsim/*
+simulation/modelsim/rom/*
+
+!simulation/modelsim
+!simulation/modelsim/rom
+!simulation/modelsim/rom/README
