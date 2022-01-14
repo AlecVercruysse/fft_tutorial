@@ -225,7 +225,7 @@ module mult
    logic [2*width-1:0]              untruncated_out;
 
    assign untruncated_out = a * b;
-   assign out = untruncated_out[30:15];
+   assign out = untruncated_out[30:15] + untruncated_out[14];
    // see slade paper. this works as long as we're not
    // multiplying two maximum mag. negative numbers.
 
