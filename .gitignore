@@ -1,6 +1,7 @@
 *.txt
 *.rpt
 *.bak
+*.qws
 db/
 incremental_db/
 .ipynb_checkpoints/
