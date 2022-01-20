@@ -87,19 +87,6 @@ module fft_load
    
 endmodule // fft_load
 
-module bit_reverse
-  #(parameter N_2=5)
-   (input logic [N_2-1:0] in,
-    output logic [N_2-1:0] out);
-
-   genvar                  i;
-   generate
-      for(i=0; i<N_2; i=i+1) begin : BIT_REVERSE
-	 assign out[i] = in[N_2-i-1];
-      end
-   endgenerate
-
-endmodule // bit_reverse
 
 // 32-point FFT address generation unit
 module fft_agu
@@ -158,6 +145,7 @@ module fft_agu
 
 endmodule // fft_agu
 
+
 // todo: parameterize for more than 32-point FFT.
 module calcAddr
   #(parameter width=16, N_2=5)
@@ -196,63 +184,6 @@ module fft_twiddleROM
 endmodule // fft_twiddleROM
 
 
-// make sure the script rom/hann.py has been run with
-// the desired width! the `width` param should be equal to `q` in the script.
-// todo: test hann windowing (does the read need to be clocked)?
-module hann_lut
-  #(parameter width=16, N_2=5)
-   (input logic              clk,
-    input logic [N_2-1:0]    idx,
-    output logic [width-1:0] out);
-
-   logic [width-1:0]         vectors[2**N_2-1:0];
-   initial $readmemb("rom/hann.vectors", vectors);
-
-   always @(posedge clk)
-     out <= vectors[idx];
-
-endmodule // hann_lut
-
-
-// explicit so that it is inferred, and we control
-// the truncation of the output.
-module mult
-  #(parameter width=16)
-   (input logic signed [width-1:0]  a,
-    input logic signed [width-1:0]  b,
-    output logic signed [width-1:0] out);
-
-   logic [2*width-1:0]              untruncated_out;
-
-   assign untruncated_out = a * b;
-   assign out = untruncated_out[30:15] + untruncated_out[14];
-   // see slade paper. this works as long as we're not
-   // multiplying two maximum mag. negative numbers.
-
-endmodule // mult
-
-
-module complex_mult
-  #(parameter width=16)
-   (input logic [2*width-1:0]  a,
-    input logic [2*width-1:0]  b,
-    output logic [2*width-1:0] out);
-
-   logic signed [width-1:0]    a_re, a_im, b_re, b_im, out_re, out_im;
-   assign a_re = a[31:16]; assign a_im = a[15:0];
-   assign b_re = b[31:16]; assign b_im = b[15:0];
-
-   logic signed [width-1:0]    a_re_be_re, a_im_b_im, a_re_b_im, a_im_b_re;
-   mult #(width) m1 (a_re, b_re, a_re_be_re);
-   mult #(width) m2 (a_im, b_im, a_im_b_im);
-   mult #(width) m3 (a_re, b_im, a_re_b_im);
-   mult #(width) m4 (a_im, b_re, a_im_b_re);
-
-   assign out_re = (a_re_be_re) - (a_im_b_im);
-   assign out_im = (a_re_b_im) + (a_im_b_re);
-   assign out = {out_re, out_im};
-endmodule // complex_mult
-
 module fft_butterfly
   #(parameter width=16)
    (input logic [2*width-1:0] twiddle,
@@ -286,30 +217,3 @@ module fft_butterfly
    assign bout = {bout_re, bout_im};
    
 endmodule // fft_butterfly
-
-
-// adapted from HDL example 5.7 in Harris TB
-module twoport_RAM
-  #(parameter width=16, N_2=5)
-   (input logic                clk,
-    input logic                we,
-    input logic [N_2-1:0]      adra,
-    input logic [N_2-1:0]      adrb,
-    input logic [2*width-1:0]  wda,
-    input logic [2*width-1:0]  wdb,
-    output logic [2*width-1:0] rda,
-    output logic [2*width-1:0] rdb);
-
-   reg [2*width-1:0]           mem [2**N_2-1:0];
-
-   always @(posedge clk)
-     if (we)
-       begin
-          mem[adra] <= wda;
-          mem[adrb] <= wdb;
-       end
-
-   assign rda = mem[adra];
-   assign rdb = mem[adrb];
-
-endmodule // twoport_RAM

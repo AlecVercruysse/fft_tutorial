@@ -64,6 +64,7 @@ module fft_testbench();
 	end else begin
 	   $display("Slade FFT test complete.");
            $fclose(f);
+           $stop;
 	end
      end
 endmodule // fft_testbench
