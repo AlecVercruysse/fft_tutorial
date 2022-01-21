@@ -14,17 +14,14 @@ module fft
    logic                       enable;  // for AGU operation
    logic                       rdsel;   // read from RAM0 or RAM1
    logic                       we0_agu, we0, we1; // RAMx write enable
-   logic [N_2 - 1:0]           adr0a_agu, adr0b_agu, adr0a, adr0b, adr0a_load, adr0b_load, adr0a_load_agu, adr1a, adr1b, adr1a_agu;
+   logic [N_2 - 1:0]           adr0a, adr0b, adr0a_agu, adr1a, adr1b, adr1a_agu;
    logic [N_2 - 2:0]           twiddleadr; // twiddle ROM adr
    logic [2*width-1:0]         twiddle, a, b, writea, writeb, aout, bout, rd0a, rd0b, rd1a, rd1b, val_in;
 
    // LOAD LOGIC
-   fft_load #(width, N_2) loader(clk, reset, load, rd, adr0a_load, adr0b_load, val_in);
-   assign adr0a_load_agu = load ? adr0a_load : adr0a_agu;
-   assign adr0b = load ? adr0b_load : adr0b_agu;
+   assign val_in = {rd, 16'b0}; // real input data
    assign writea = load ? val_in : aout;
    assign writeb = load ? val_in : bout;
-   assign we0    = load ?   1'b1 : we0_agu;
 
    // AGU ENABLE LOGIC
    always_ff @(posedge clk)
@@ -36,7 +33,7 @@ module fft
    // OUTPUT LOGIC
    logic [N_2-1:0] out_idx;
    assign wd    = N_2[0] ? rd1a : rd1b; // ram holding results depends on even-ness of log2(N-points)s?
-   assign adr0a = done ? out_idx : adr0a_load_agu;
+   assign adr0a = done ? out_idx : adr0a_agu;
    assign adr1a = done ? out_idx : adr1a_agu;
 
    always_ff @(posedge clk)
@@ -45,7 +42,7 @@ module fft
 	else if (done)  out_idx <= out_idx + 1'b1;
      end
 
-   fft_agu #(width, N_2) agu(clk, enable, reset, done, rdsel, we0_agu, adr0a_agu, adr0b_agu, we1, adr1a_agu, adr1b, twiddleadr);
+   fft_agu #(width, N_2) agu(clk, enable, reset, load, rd, done, rdsel, we0, adr0a_agu, adr0b, we1, adr1a_agu, adr1b, twiddleadr);
    fft_twiddleROM #(width, N_2) twiddlerom(twiddleadr, twiddle);
 
    twoport_RAM #(width, N_2) ram0(clk, we0, adr0a, adr0b, writea, writeb, rd0a, rd0b);
@@ -64,12 +61,14 @@ module fft_load
     input logic                load,
     input logic [width-1:0]    rd,
     output logic [N_2-1:0]     adr0a_load,
-    output logic [N_2-1:0]     adr0b_load,
-    output logic [2*width-1:0] val_in);
+    output logic [N_2-1:0]     adr0b_load);
 
    // index of input sample
-   // note that this is assuming the address of `rd` is the same as `idx`.
-   // TODO: refactor so this assumption is not made? e.g. output `idx` to address our testbench vectors?
+   // note that this is assuming the address of `rd` (computed in the testbench) is the same as `idx`.
+   // TODO: refactor so this assumptison is not made? e.g. output `idx` to address our testbench vectors?
+   //       AV - I don't think this is necessary since in a real use-case where live data is being streamed
+   //            into the loader, the live data won't have or require an 'idx' to address.
+   
    logic [N_2-1:0]             idx;
    always_ff @(posedge clk)
      begin
@@ -82,8 +81,6 @@ module fft_load
 
    bit_reverse #(N_2) reverseaddr(idx, adr0a_load);
    assign adr0b_load = adr0a_load;
-
-   assign val_in = {rd, 16'b0}; // imaginary is all zeros!
    
 endmodule // fft_load
 
@@ -91,18 +88,20 @@ endmodule // fft_load
 // 32-point FFT address generation unit
 module fft_agu
   #(parameter width=16, N_2=5)
-   (input logic            clk,
-    input logic            enable,
-    input logic            reset,
-    output logic           done,
-    output logic           rdsel,
-    output logic           we0,
-    output logic [N_2-1:0] adr0a,
-    output logic [N_2-1:0] adr0b,
-    output logic           we1,
-    output logic [N_2-1:0] adr1a,
-    output logic [N_2-1:0] adr1b,
-    output logic [N_2-2:0] twiddleadr);
+   (input logic             clk,
+    input logic             enable,
+    input logic             reset,
+    input logic             load,
+    input logic [width-1:0] rd,
+    output logic            done,
+    output logic            rdsel,
+    output logic            we0,
+    output logic [N_2-1:0]  adr0a,
+    output logic [N_2-1:0]  adr0b,
+    output logic            we1,
+    output logic [N_2-1:0]  adr1a,
+    output logic [N_2-1:0]  adr1b,
+    output logic [N_2-2:0]  twiddleadr);
 
    logic [N_2-1:0]         fftLevel = 0;
    logic [N_2-1:0]         flyInd = 0;
@@ -130,19 +129,24 @@ module fft_agu
    assign done = (fftLevel == (N_2));
    calcAddr #(width, N_2) adrCalc(fftLevel, flyInd, adrA, adrB, twiddleadr);
 
-   assign adr0a = adrA;
-   assign adr1a = adrA;
+   logic [N_2 - 1:0]     adr0a_load, adr0b_load; // if loading, use addr from loader to load RAM0
+   assign adr0a = load ? adr0a_load : adrA;
+   assign adr1a =                     adrA;
 
-   assign adr0b = adrB;
-   assign adr1b = adrB;
+   assign adr0b = load ? adr0b_load : adrB;
+   assign adr1b =                     adrB;
 
    // flips every cycle
-   assign we0 =  fftLevel[0] & enable;
+   assign we0 = (fftLevel[0] & enable) | load;
    assign we1 = ~fftLevel[0] & enable;
 
    // flips every cycle
    assign rdsel = fftLevel[0];
 
+   // LOAD LOGIC
+   // see adr0a and adr0b, and we0
+   fft_load #(width, N_2) loader(clk, reset, load, rd, adr0a_load, adr0b_load);
+  
 endmodule // fft_agu
 
 
@@ -167,21 +171,6 @@ module calcAddr
       twiddleadr = ((32'hffff_fff0 >> fftLevel) & 32'hf) & flyInd;
    end
 endmodule // calcAddr
-
-module fft_twiddleROM
-  #(parameter width=16, N_2=5)
-   (input logic  [N_2-2:0] twiddleadr, // 0 - 1023 = 10 bits
-    output logic [2*width-1:0] twiddle);
-
-   // twiddle table pseudocode: w[k] = w[k-1] * w,
-   // where w[0] = 1 and w = exp(-j 2pi/N)
-   // for k=0... N/2-1
-
-   logic [2*width-1:0]         vectors [0:2**(N_2-1)-1];
-   initial $readmemb("rom/twiddle.vectors", vectors);
-   assign twiddle = vectors[twiddleadr];
-
-endmodule // fft_twiddleROM
 
 
 module fft_butterfly

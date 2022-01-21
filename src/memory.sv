@@ -24,3 +24,19 @@ module twoport_RAM
    assign rdb = mem[adrb];
 
 endmodule // twoport_RAM
+
+
+module fft_twiddleROM
+  #(parameter width=16, N_2=5)
+   (input logic  [N_2-2:0] twiddleadr, // 0 - 1023 = 10 bits
+    output logic [2*width-1:0] twiddle);
+
+   // twiddle table pseudocode: w[k] = w[k-1] * w,
+   // where w[0] = 1 and w = exp(-j 2pi/N)
+   // for k=0... N/2-1
+
+   logic [2*width-1:0]         vectors [0:2**(N_2-1)-1];
+   initial $readmemb("rom/twiddle.vectors", vectors);
+   assign twiddle = vectors[twiddleadr];
+
+endmodule // fft_twiddleROM
