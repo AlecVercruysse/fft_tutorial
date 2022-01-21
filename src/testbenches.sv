@@ -4,19 +4,21 @@
 // compares output to        rom/gt_test_out.memh,
 // writes computed output to rom/test_out.memh.
 // (see "/sim/verify sim fft.ipynb" to process output)
-module fft_testbench();
+module fft_testbench
+  #(parameter width=16, N_2=5)();
+   
    logic clk;
    logic start, load, done, reset;
-   logic signed [15:0] rd, expected_re, expected_im, wd_re, wd_im;
-   logic [31:0]        wd;
-   logic [31:0]        idx, out_idx, expected;
+   logic signed [width-1:0] rd, expected_re, expected_im, wd_re, wd_im;
+   logic [2*width-1:0]        wd;
+   logic [2*width-1:0]        idx, out_idx, expected;
    
-   logic [15:0]        input_data [0:31];
-   logic [31:0]        expected_out [0:31];
+   logic [width-1:0]          input_data [0:2**N_2-1];
+   logic [2*width-1:0]        expected_out [0:2**N_2-1];
 
    integer             f; // file pointer
   
-   fft #(16, 5) dut(clk, reset, start, load, rd, wd, done);
+   fft #(width, N_2) dut(clk, reset, start, load, rd, wd, done);
    
    // clk
    always
@@ -37,8 +39,8 @@ module fft_testbench();
    always @(posedge clk)
      if (~reset) idx <= idx + 1;
      else idx <= idx;
-   assign load =  idx < 32;
-   assign start = idx === 32;
+   assign load =  idx < 2**N_2;
+   assign start = idx === 2**N_2;
 
    // increment output address if done, reset if restarting FFT
    always @(posedge clk)
@@ -46,17 +48,17 @@ module fft_testbench();
      else if (done) out_idx <= out_idx + 1;
    
    // load/start logic
-   assign rd = load ? input_data[idx[4:0]] : 0;  // read in test data by addressing `input_data` with `idx`.
-   assign expected = expected_out[out_idx[4:0]]; // get test output by addressing `expected_out` with `idx`.
-   assign expected_re = expected[31:16];         // get real      part of `expected` (gt output)
-   assign expected_im = expected[15:0];          // get imaginary part of `expected` (gt output)
-   assign wd_re = wd[31:16];                     // get real      part of `wd` (computed output)
-   assign wd_im = wd[15:0];                      // get imaginary part of `wd` (computed output)
+   assign rd = load ? input_data[idx[N_2-1:0]] : 0;  // read in test data by addressing `input_data` with `idx`.
+   assign expected = expected_out[out_idx[N_2-1:0]]; // get test output by addressing `expected_out` with `idx`.
+   assign expected_re = expected[2*width-1:width];   // get real      part of `expected` (gt output)
+   assign expected_im = expected[width-1:0];         // get imaginary part of `expected` (gt output)
+   assign wd_re = wd[2*width-1:width];               // get real      part of `wd` (computed output)
+   assign wd_im = wd[width-1:0];                     // get imaginary part of `wd` (computed output)
 
    // if FFT is done, compare gt to computed output, and write computed output to file.
    always @(posedge clk)
      if (done) begin
-	if (out_idx <= 31) begin
+	if (out_idx <= (2**N_2-1)) begin
            $fwrite(f, "%h\n", wd);
 	   if (wd !== expected) begin
 	      $display("Error @ out_idx %d: expected %b (got %b)    expected: %d+j%d, got %d+j%d", out_idx, expected, wd, expected_re, expected_im, wd_re, wd_im);

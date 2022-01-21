@@ -19,7 +19,7 @@ module fft
    logic [2*width-1:0]         twiddle, a, b, writea, writeb, aout, bout, rd0a, rd0b, rd1a, rd1b, val_in;
 
    // LOAD LOGIC
-   assign val_in = {rd, 16'b0}; // real input data
+   assign val_in = {rd, {width{1'b0}} }; // real input data
    assign writea = load ? val_in : aout;
    assign writeb = load ? val_in : bout;
 
@@ -32,7 +32,7 @@ module fft
 
    // OUTPUT LOGIC
    logic [N_2-1:0] out_idx;
-   assign wd    = N_2[0] ? rd1a : rd1b; // ram holding results depends on even-ness of log2(N-points)s?
+   assign wd    = N_2[0] ? rd1a : rd0a; // ram holding results depends on even-ness of log2(N-points)s?
    assign adr0a = done ? out_idx : adr0a_agu;
    assign adr1a = done ? out_idx : adr1a_agu;
 
@@ -42,7 +42,7 @@ module fft
 	else if (done)  out_idx <= out_idx + 1'b1;
      end
 
-   fft_agu #(width, N_2) agu(clk, enable, reset, load, rd, done, rdsel, we0, adr0a_agu, adr0b, we1, adr1a_agu, adr1b, twiddleadr);
+   fft_agu        #(width, N_2) agu(clk, enable, reset, load, rd, done, rdsel, we0, adr0a_agu, adr0b, we1, adr1a_agu, adr1b, twiddleadr);
    fft_twiddleROM #(width, N_2) twiddlerom(twiddleadr, twiddle);
 
    twoport_RAM #(width, N_2) ram0(clk, we0, adr0a, adr0b, writea, writeb, rd0a, rd0b);
@@ -143,8 +143,7 @@ module fft_agu
    // flips every cycle
    assign rdsel = fftLevel[0];
 
-   // LOAD LOGIC
-   // see adr0a and adr0b, and we0
+   // load logic: see adr0a and adr0b, and we0
    fft_load #(width, N_2) loader(clk, reset, load, rd, adr0a_load, adr0b_load);
   
 endmodule // fft_agu
@@ -153,8 +152,8 @@ endmodule // fft_agu
 // todo: parameterize for more than 32-point FFT.
 module calcAddr
   #(parameter width=16, N_2=5)
-   (input logic  [N_2-1:0]    fftLevel,
-    input logic [N_2-1:0]  flyInd,
+   (input logic  [N_2-1:0] fftLevel,
+    input logic  [N_2-1:0] flyInd,
     output logic [N_2-1:0] adrA,
     output logic [N_2-1:0] adrB,
     output logic [N_2-2:0] twiddleadr);
@@ -163,12 +162,16 @@ module calcAddr
    logic [N_2-1:0]         tempB;
 
    always_comb begin
-      tempA = flyInd << 1'd1;
-      tempB = tempA +  1'd1;
-      adrA = ((tempA << fftLevel) | (tempA >> (N_2 - fftLevel))) & 5'h1f;
 
-      adrB = ((tempB << fftLevel) | (tempB >> (N_2 - fftLevel))) & 5'h1f;
-      twiddleadr = ((32'hffff_fff0 >> fftLevel) & 32'hf) & flyInd;
+      // implement the rotations with shifting
+      tempA = flyInd << 1'd1;
+      tempB = tempA  +  1'd1;
+      adrA = ((tempA << fftLevel) | (tempA >> (N_2 - fftLevel)));
+      adrB = ((tempB << fftLevel) | (tempB >> (N_2 - fftLevel)));
+
+      // replication operator to create the mask that gets shifted
+      twiddleadr = ({ {2**N_2-N_2-1{1'b1}}, {N_2-1{1'b0}} } >> fftLevel) & flyInd;
+      
    end
 endmodule // calcAddr
 
@@ -185,15 +188,14 @@ module fft_butterfly
    logic signed [width-1:0]    b_re_mult, b_im_mult;
    logic [2*width-1:0]         b_mult;
 
-
    // expand to re and im components
    assign a_re = a[2*width-1:width];
    assign a_im = a[width-1:0];
    
    // perform computation
    complex_mult #(width) twiddle_mult(b, twiddle, b_mult);
-   assign b_re_mult = b_mult[31:16];
-   assign b_im_mult = b_mult[15:0];
+   assign b_re_mult = b_mult[2*width-1:width];
+   assign b_im_mult = b_mult[width-1:0];
 
    assign aout_re = a_re + b_re_mult;
    assign aout_im = a_im + b_im_mult;

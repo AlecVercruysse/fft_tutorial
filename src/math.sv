@@ -9,7 +9,7 @@ module mult
    logic [2*width-1:0]              untruncated_out;
 
    assign untruncated_out = a * b;
-   assign out = untruncated_out[30:15] + untruncated_out[14];
+   assign out = untruncated_out[2*width-2:width-1] + untruncated_out[width-2];
    // see slade paper. this works as long as we're not
    // multiplying two maximum mag. negative numbers.
 
@@ -23,8 +23,8 @@ module complex_mult
     output logic [2*width-1:0] out);
 
    logic signed [width-1:0]    a_re, a_im, b_re, b_im, out_re, out_im;
-   assign a_re = a[31:16]; assign a_im = a[15:0];
-   assign b_re = b[31:16]; assign b_im = b[15:0];
+   assign a_re = a[2*width-1:width]; assign a_im = a[width-1:0];
+   assign b_re = b[2*width-1:width]; assign b_im = b[width-1:0];
 
    logic signed [width-1:0]    a_re_be_re, a_im_b_im, a_re_b_im, a_im_b_re;
    mult #(width) m1 (a_re, b_re, a_re_be_re);
@@ -51,3 +51,4 @@ module bit_reverse
    endgenerate
 
 endmodule // bit_reverse
+
