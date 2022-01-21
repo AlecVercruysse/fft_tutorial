@@ -7,6 +7,7 @@ module fft
     input logic                reset,
     input logic                start,
     input logic                load,
+    input logic [N_2 - 1:0]    rd_adr,
     input logic [width-1:0]    rd, // real    read data in
     output logic [2*width-1:0] wd, // complex write data out
     output logic               done);
@@ -42,8 +43,11 @@ module fft
 	else if (done)  out_idx <= out_idx + 1'b1;
      end
 
-   fft_agu        #(width, N_2) agu(clk, enable, reset, load, rd, done, rdsel, we0, adr0a_agu, adr0b, we1, adr1a_agu, adr1b, twiddleadr);
    fft_twiddleROM #(width, N_2) twiddlerom(twiddleadr, twiddle);
+   fft_agu        #(width, N_2) agu(clk, enable, reset, load, rd_adr, rd, done, rdsel, 
+                                    we0, adr0a_agu, adr0b, 
+                                    we1, adr1a_agu, adr1b, 
+                                    twiddleadr);
 
    twoport_RAM #(width, N_2) ram0(clk, we0, adr0a, adr0b, writea, writeb, rd0a, rd0b);
    twoport_RAM #(width, N_2) ram1(clk, we1, adr1a, adr1b,   aout,   bout, rd1a, rd1b);
@@ -54,36 +58,6 @@ module fft
 
 endmodule // fft
 
-module fft_load
-  #(parameter width=16, N_2=5)
-   (input logic clk,
-    input logic                reset,
-    input logic                load,
-    input logic [width-1:0]    rd,
-    output logic [N_2-1:0]     adr0a_load,
-    output logic [N_2-1:0]     adr0b_load);
-
-   // index of input sample
-   // note that this is assuming the address of `rd` (computed in the testbench) is the same as `idx`.
-   // TODO: refactor so this assumptison is not made? e.g. output `idx` to address our testbench vectors?
-   //       AV - I don't think this is necessary since in a real use-case where live data is being streamed
-   //            into the loader, the live data won't have or require an 'idx' to address.
-   
-   logic [N_2-1:0]             idx;
-   always_ff @(posedge clk)
-     begin
-	if (reset) begin
-	   idx <= 0;
-	end else if (load) begin
-	   idx <= idx + 1'b1;
-	end
-     end
-
-   bit_reverse #(N_2) reverseaddr(idx, adr0a_load);
-   assign adr0b_load = adr0a_load;
-   
-endmodule // fft_load
-
 
 // 32-point FFT address generation unit
 module fft_agu
@@ -92,6 +66,7 @@ module fft_agu
     input logic             enable,
     input logic             reset,
     input logic             load,
+    input logic [N_2-1:0]   rd_adr,
     input logic [width-1:0] rd,
     output logic            done,
     output logic            rdsel,
@@ -106,9 +81,10 @@ module fft_agu
    logic [N_2-1:0]         fftLevel = 0;
    logic [N_2-1:0]         flyInd = 0;
 
-   logic [N_2-1:0]         adrA;
-   logic [N_2-1:0]         adrB;
+   logic [N_2-1:0]         adrA, adrB;
 
+   // todo: refactor AGU to be control unit,
+   //       this goes into it's own module
    always_ff @(posedge clk) begin
       if (reset) begin
          fftLevel <= 0;
@@ -144,7 +120,8 @@ module fft_agu
    assign rdsel = fftLevel[0];
 
    // load logic: see adr0a and adr0b, and we0
-   fft_load #(width, N_2) loader(clk, reset, load, rd, adr0a_load, adr0b_load);
+   bit_reverse #(N_2) reverseaddr(rd_adr, adr0a_load);
+   assign adr0b_load = adr0a_load;   
   
 endmodule // fft_agu
 
