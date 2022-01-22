@@ -68,7 +68,7 @@ module fft_testbench
                        out_idx, expected, wd, expected_re, expected_im, wd_re, wd_im);
 	   end
 	end else begin
-	   $display("Slade FFT test complete.");
+	   $display("FFT test complete.");
            $fclose(f);
            $stop;
 	end
