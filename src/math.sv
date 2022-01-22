@@ -1,5 +1,6 @@
-// explicit so that we control
-// the truncation of the output.
+// Multiplication.
+// This performs `width`-bit multiplication on fixed point signed
+// integers, returning `width`-bit outputs, with rounding of the lsb.
 module mult
   #(parameter width=16)
    (input logic signed [width-1:0]  a,
@@ -10,12 +11,12 @@ module mult
 
    assign untruncated_out = a * b;
    assign out = untruncated_out[2*width-2:width-1] + untruncated_out[width-2];
-   // see slade paper. this works as long as we're not
+   // We can discard the msb as long as we're not
    // multiplying two maximum mag. negative numbers.
 
 endmodule // mult
 
-
+// Complex multiplication.
 module complex_mult
   #(parameter width=16)
    (input logic [2*width-1:0]  a,
@@ -37,7 +38,7 @@ module complex_mult
    assign out = {out_re, out_im};
 endmodule // complex_mult
 
-
+// Parameterized bit reversal.
 module bit_reverse
   #(parameter N_2=5)
    (input logic [N_2-1:0] in,

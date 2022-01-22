@@ -66,6 +66,7 @@ set_global_assignment -name EDA_DESIGN_INSTANCE_NAME NA -section_id fft_testbenc
 set_global_assignment -name EDA_TEST_BENCH_RUN_SIM_FOR "1500 ps" -section_id fft_testbench
 set_global_assignment -name EDA_TEST_BENCH_MODULE_NAME fft_testbench -section_id fft_testbench
 set_global_assignment -name EDA_TEST_BENCH_FILE src/testbenches.sv -section_id fft_testbench
+set_global_assignment -name SYSTEMVERILOG_FILE src/fft_control.sv
 set_global_assignment -name SYSTEMVERILOG_FILE src/memory.sv
 set_global_assignment -name SYSTEMVERILOG_FILE src/math.sv
 set_global_assignment -name SYSTEMVERILOG_FILE src/testbenches.sv
