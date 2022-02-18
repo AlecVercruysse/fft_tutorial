@@ -9,7 +9,7 @@ q = 16
 
 def int2bin(integer, digits):
     """
-    Convert a signed integer into its two's complement representaion.
+    Convert a signed integer into its two's complement representation.
     From https://stackoverflow.com/a/53839867/6115747.
 
     Parameters
@@ -23,7 +23,7 @@ def int2bin(integer, digits):
     Returns
     -------
     binary : str
-       Binary string containing the two's complement reprentation.
+       Binary string containing the two's complement representation.
     """
     if integer >= 0:
         return bin(integer)[2:].zfill(digits)
