@@ -9,14 +9,14 @@ module fft_testbench
    
    logic clk;
    logic start, load, done, reset;
-   logic signed [width-1:0] rd, expected_re, expected_im, wd_re, wd_im;
-   logic [2*width-1:0]        wd;
+   logic signed [width-1:0] expected_re, expected_im, wd_re, wd_im;
+   logic [2*width-1:0]        rd, wd;
    logic [2*width-1:0]        idx, out_idx, expected;
 
    logic [N_2-1:0]            rd_adr;
    assign rd_adr = idx[N_2-1:0];
    
-   logic [width-1:0]          input_data [0:2**N_2-1];
+   logic [2*width-1:0]          input_data [0:2**N_2-1];
    logic [2*width-1:0]        expected_out [0:2**N_2-1];
 
    integer             f; // file pointer

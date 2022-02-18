@@ -9,7 +9,7 @@ module fft
     input logic                start,  // pulse once loading is complete to begin calculation.
     input logic                load,   // when high, sample #`rd_adr` is read from `rd` to mem.
     input logic [N_2 - 1:0]    rd_adr, // index of the input sample.
-    input logic [width-1:0]    rd,     // real    read data in
+    input logic [2*width-1:0]  rd,     // read data in
     output logic [2*width-1:0] wd,     // complex write data out
     output logic               done);  // stays high when complete until `reset` pulsed.
 
@@ -21,7 +21,7 @@ module fft
    logic [2*width-1:0]         rd0a, rd0b, rd1a, rd1b, val_in;
 
    // load logic 
-   assign val_in = {rd, {width{1'b0}} }; // real input data -> add zeros in imag. part
+   assign val_in = rd; // complex input data real in top 16 bits, imaginary in bottom 16 bits
    assign writea = load ? val_in : aout; // write ram0 with input data or BFU output
    assign writeb = load ? val_in : bout;
 
