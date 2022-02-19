@@ -34,7 +34,7 @@ module fft
 
    // submodules
    fft_twiddleROM #(width, N_2) twiddlerom(twiddleadr, twiddle);
-   fft_control    #(width, N_2) control(clk, start, reset, load, rd_adr, rd, done, rdsel, 
+   fft_control    #(width, N_2) control(clk, start, reset, load, rd_adr, done, rdsel, 
                                         we0, adr0a, adr0b, we1, adr1a, adr1b, twiddleadr);
 
    twoport_RAM #(width, N_2) ram0(clk, we0, adr0a, adr0b, writea, writeb, rd0a, rd0b);
