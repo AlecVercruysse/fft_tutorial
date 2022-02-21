@@ -7,6 +7,7 @@ incremental_db/
 .ipynb_checkpoints/
 output_files/
 rom/twiddle.vectors
+test_case.pdf
 
 ; need to keep simulation/modelsim/rom folder & its associated readme,
 ; but ignore all else. There's no way super clean way to do this.
