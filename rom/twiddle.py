@@ -9,7 +9,7 @@ q = 16
 
 def int2bin(integer, digits):
     """
-    Convert a signed integer into its two's complement representaion.
+    Convert a signed integer into its two's complement representation.
     From https://stackoverflow.com/a/53839867/6115747.
 
     Parameters
@@ -23,7 +23,7 @@ def int2bin(integer, digits):
     Returns
     -------
     binary : str
-       Binary string containing the two's complement reprentation.
+       Binary string containing the two's complement representation.
     """
     if integer >= 0:
         return bin(integer)[2:].zfill(digits)
@@ -53,3 +53,12 @@ with open("../simulation/modelsim/rom/twiddle.vectors", 'w') as f:
     for i in range(len(w_re)):
         f.write(w_re[i] + "" + w_im[i] + "\n")
 
+# write the memory to a test file in hex.
+with open("twiddle_hex.txt", 'w') as f:
+    for i in range(len(w_re)):
+        f.write(f"{int(w_re[i],base=2):04x}{int(w_im[i],base=2):04x}\n")
+
+# write the memory to a test file in hex formatted for LaTeX table.
+with open("twiddle_hex_formatted.txt", 'w') as f:
+    for i in range(len(w_re)):
+        f.write(f"{i} & \\texttt{{({int(w_re[i],base=2):04x})}}+j\\texttt{{({int(w_im[i],base=2):04x})}}\\\\\n")
