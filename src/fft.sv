@@ -1,22 +1,22 @@
 // fft top level module.
 // the width is the bit width (e.g. if width=16, 16 real and 16 im bits).
-// N_2 is log base 2 of N (points in the FFT). e.g. N_2=5 for 32-point FFT.
-// the input should be width-N_2 to account for bit growth.
+// M is log base 2 of N (points in the FFT). e.g. M=5 for 32-point FFT.
+// the input should be width-M to account for bit growth.
 module fft
-  #(parameter width=16, N_2=5)
+  #(parameter width=16, M=5)
    (input logic                clk,    // clock
     input logic                reset,  // reset
     input logic                start,  // pulse once loading is complete to begin calculation.
     input logic                load,   // when high, sample #`rd_adr` is read from `rd` to mem.
-    input logic [N_2 - 1:0]    rd_adr, // index of the input sample.
+    input logic [M - 1:0]    rd_adr, // index of the input sample.
     input logic [2*width-1:0]  rd,     // read data in
     output logic [2*width-1:0] wd,     // complex write data out
     output logic               done);  // stays high when complete until `reset` pulsed.
 
    logic                       rdsel;      // read from RAM0 or RAM1
    logic                       we0, we1;   // RAMx write enable
-   logic [N_2 - 1:0]           adr0a, adr0b, adr1a, adr1b;
-   logic [N_2 - 2:0]           twiddleadr; // twiddle ROM adr
+   logic [M - 1:0]           adr0a, adr0b, adr1a, adr1b;
+   logic [M - 2:0]           twiddleadr; // twiddle ROM adr
    logic [2*width-1:0]         twiddle, a, b, writea, writeb, aout, bout;
    logic [2*width-1:0]         rd0a, rd0b, rd1a, rd1b, val_in;
 
@@ -26,19 +26,19 @@ module fft
    assign writeb = load ? val_in : bout;
 
    // output logic
-   assign wd = N_2[0] ? rd1a : rd0a;     // ram holding results depends on #fftLevels
+   assign wd = M[0] ? rd1a : rd0a;     // ram holding results depends on #fftLevels
 
    // ping-pong read (BFU input) logic
    assign a = rdsel ? rd1a : rd0a;
    assign b = rdsel ? rd1b : rd0b;
 
    // submodules
-   fft_twiddleROM #(width, N_2) twiddlerom(twiddleadr, twiddle);
-   fft_control    #(width, N_2) control(clk, start, reset, load, rd_adr, done, rdsel, 
+   fft_twiddleROM #(width, M) twiddlerom(twiddleadr, twiddle);
+   fft_control    #(width, M) control(clk, start, reset, load, rd_adr, done, rdsel, 
                                         we0, adr0a, adr0b, we1, adr1a, adr1b, twiddleadr);
 
-   twoport_RAM #(width, N_2) ram0(clk, we0, adr0a, adr0b, writea, writeb, rd0a, rd0b);
-   twoport_RAM #(width, N_2) ram1(clk, we1, adr1a, adr1b,   aout,   bout, rd1a, rd1b);
+   twoport_RAM #(width, M) ram0(clk, we0, adr0a, adr0b, writea, writeb, rd0a, rd0b);
+   twoport_RAM #(width, M) ram1(clk, we1, adr1a, adr1b,   aout,   bout, rd1a, rd1b);
 
    fft_butterfly #(width) bgu(twiddle, a, b, aout, bout);
 

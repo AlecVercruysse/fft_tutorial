@@ -40,14 +40,14 @@ endmodule // complex_mult
 
 // Parameterized bit reversal.
 module bit_reverse
-  #(parameter N_2=5)
-   (input logic [N_2-1:0] in,
-    output logic [N_2-1:0] out);
+  #(parameter M=5)
+   (input logic [M-1:0] in,
+    output logic [M-1:0] out);
 
    genvar                  i;
    generate
-      for(i=0; i<N_2; i=i+1) begin : BIT_REVERSE
-	 assign out[i] = in[N_2-i-1];
+      for(i=0; i<M; i=i+1) begin : BIT_REVERSE
+	 assign out[i] = in[M-i-1];
       end
    endgenerate
 
