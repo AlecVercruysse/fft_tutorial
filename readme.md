@@ -1,5 +1,7 @@
 # Example FFT Module + Testbench
 
+[![DOI](https://zenodo.org/badge/447786499.svg)](https://zenodo.org/badge/latestdoi/447786499)
+
 This repository contains the SystemVerilog code necessary to run and test a 32-point 16-bit fixed-point FFT in Quartus.
 
 Steps for operation:
