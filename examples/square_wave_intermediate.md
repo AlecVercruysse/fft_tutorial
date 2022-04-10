@@ -1,6 +1,6 @@
 # Square Wave Input w/Intermediate Values
 
-![square_wave.png](FFT of a Square Wave)
+![FFT of a Square Wave](figures/square_wave.png)
 
 ## FFT Input/Output
 

@@ -1,6 +1,6 @@
 # All Ones (DC) Input
 
-![all_ones.png](FFT of a DC Signal)
+![FFT of a DC Signal](figures/all_ones.png)
 
 ## FFT Input/Output
 
@@ -38,5 +38,3 @@
 | 03ff       | 0000            |    | 0000        | 0000             |
 | 03ff       | 0000            |    | 0000        | 0000             |
 | 03ff       | 0000            |    | 0000        | 0000             |
-| 
-| 

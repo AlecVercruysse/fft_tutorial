@@ -1,6 +1,6 @@
 # Cosine Wave Input
 
-![cos_wave.png](FFT of a Cosine Function)
+![FFT of a Cosine Function](figures/cos_wave.png)
 
 ## FFT Input/Output
 
